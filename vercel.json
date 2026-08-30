@@ -1,0 +1,6 @@
+{
+  "functions": {
+    "api/kk.py": { "maxDuration": 10 },
+    "api/panel.py": { "maxDuration": 10 }
+  }
+}
