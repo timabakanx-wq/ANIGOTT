@@ -1,6 +1,10 @@
 {
-  "functions": {
-    "api/kk.py": { "maxDuration": 10 },
-    "api/panel.py": { "maxDuration": 10 }
-  }
+  "builds": [
+    { "src": "api/kk.py", "use": "@vercel/python" },
+    { "src": "api/panel.py", "use": "@vercel/python" }
+  ],
+  "routes": [
+    { "src": "/api/kk", "dest": "api/kk.py" },
+    { "src": "/api/panel", "dest": "api/panel.py" }
+  ]
 }
