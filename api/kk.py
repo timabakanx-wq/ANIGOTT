@@ -104,50 +104,39 @@ async def guide_group(message: Message):
     await message.answer("Гайд доступен только в личных сообщениях с ботом.")
 
 @router.message()
-async def handle_all_messages(message: Message):
-    # Сначала проверяем ставки
-    if message.text and message.text.lower().startswith(("ставка", "ст")):
-        prices, aliases = get_data()
-        lines = message.text.split("\n")[1:]
-        total = 0.0
-        results = []
-        pattern = re.compile(r'^(.+?)\s+(\d+)(?:\s+(\d+))?$')
+async def count_messages(message: Message):
+    try:
+        if message.chat.type == "private":
+            return
+        if message.from_user is None or message.from_user.is_bot:
+            return
+        if message.text and message.text.lower().startswith(("ставка", "ст")):
+            return
         
-        for line in lines:
-            if not line.strip():
-                continue
-            m = pattern.match(line.strip())
-            if not m:
-                results.append(f"❌ <code>{line}</code>")
-                continue
-            
-            raw_name, level, count = m.groups()
-            name = normalize_card_name(raw_name, aliases)
-            level = int(level)
-            count = int(count) if count else 1
-            
-            if name not in prices:
-                results.append(f"❌ <b>{raw_name}</b> — нет карты")
-                continue
-            if level not in prices[name]:
-                results.append(f"❌ <b>{raw_name} {level}</b> — нет уровня")
-                continue
-            
-            points = prices[name][level] * count
-            total += points
-            results.append(f"✅ <b>{raw_name} {level}</b> ×{count} = {points:g}")
+        user_id, chat_id = message.from_user.id, message.chat.id
         
-        user = (
-            f"@{message.from_user.username}"
-            if message.from_user.username
-            else message.from_user.first_name
-        )
-        text = f"💰 <b>Итог {user}</b>: {total:g} пт\n\n" + "\n".join(results)
-        await message.reply(text, parse_mode="HTML")
-        return  # ВАЖНО: return чтобы не сработал счётчик сообщений
-    
-    # ... остальная логика (счётчик сообщений, команды и т.д.)
-
+        # ОДИН запрос вместо 8-15: инкремент сразу возвращает счётчик
+        count = increment_message_count(user_id, chat_id)
+        
+        # Загружаем достижения и предупреждения ОДНИМ запросом каждое
+        owned = get_user_achievements(user_id, chat_id)
+        warnings = get_user_warnings(user_id, chat_id)
+        
+        for ach in ACHIEVEMENTS:
+            if count >= ach["count"] and ach["id"] not in owned:
+                give_achievement(user_id, chat_id, ach["id"])
+                owned.add(ach["id"])
+                await message.reply(f"🏆 <b>Достижение получено!</b>\n<b>{ach['name']}</b>\n{ach['desc']}")
+        
+        next_ach = next((a for a in ACHIEVEMENTS if a["id"] not in owned), None)
+        if next_ach:
+            left = next_ach["count"] - count
+            for warn in (50, 10):
+                if left == warn and (next_ach["id"], warn) not in warnings:
+                    save_warning(user_id, chat_id, next_ach["id"], warn)
+                    await message.reply(f"⏳ До достижения <b>{next_ach['name']}</b> осталось <b>{warn}</b> сообщений 🔥")
+    except Exception as e:
+        logging.error(f"count_messages error: {e}")
 @router.message(Command("top"))
 async def top_users(message: Message):
     if message.chat.type == "private":
