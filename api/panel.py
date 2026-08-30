@@ -3,6 +3,8 @@ from http.server import BaseHTTPRequestHandler
 from aiogram import Bot, Dispatcher, Router, F
 from aiogram.types import Update, Message, InlineKeyboardMarkup as IKM, InlineKeyboardButton as IKB, CallbackQuery
 from aiogram.filters import Command
+from aiogram.enums import ParseMode
+from aiogram.client.default import DefaultBotProperties
 from supabase import create_client
 
 BOT_TOKEN = os.environ["PANEL_BOT_TOKEN"]
@@ -12,7 +14,13 @@ WEBHOOK_SECRET = os.environ.get("PANEL_WEBHOOK_SECRET", "")
 ADMIN_IDS = {int(x) for x in os.environ.get("ADMIN_IDS", "").split(",") if x.strip()}
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-bot = Bot(token=BOT_TOKEN)
+
+# ИСПРАВЛЕНО: добавлен parse_mode=HTML
+bot = Bot(
+    token=BOT_TOKEN,
+    default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+)
+
 dp = Dispatcher()
 router = Router()
 dp.include_router(router)
@@ -20,6 +28,39 @@ logging.basicConfig(level=logging.INFO)
 
 def is_admin(uid):
     return uid in ADMIN_IDS
+
+# ... остальной код без измененийimport os, json, asyncio, logging
+from http.server import BaseHTTPRequestHandler
+from aiogram import Bot, Dispatcher, Router, F
+from aiogram.types import Update, Message, InlineKeyboardMarkup as IKM, InlineKeyboardButton as IKB, CallbackQuery
+from aiogram.filters import Command
+from aiogram.enums import ParseMode
+from aiogram.client.default import DefaultBotProperties
+from supabase import create_client
+
+BOT_TOKEN = os.environ["PANEL_BOT_TOKEN"]
+SUPABASE_URL = os.environ["SUPABASE_URL"]
+SUPABASE_KEY = os.environ["SUPABASE_KEY"]
+WEBHOOK_SECRET = os.environ.get("PANEL_WEBHOOK_SECRET", "")
+ADMIN_IDS = {int(x) for x in os.environ.get("ADMIN_IDS", "").split(",") if x.strip()}
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# ИСПРАВЛЕНО: добавлен parse_mode=HTML
+bot = Bot(
+    token=BOT_TOKEN,
+    default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+)
+
+dp = Dispatcher()
+router = Router()
+dp.include_router(router)
+logging.basicConfig(level=logging.INFO)
+
+def is_admin(uid):
+    return uid in ADMIN_IDS
+
+# ... остальной код без изменений
 
 # ===== ПАРСЕРЫ МУЛЬТИ-ВВОДА =====
 def parse_data_lines(text):
