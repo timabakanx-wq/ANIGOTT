@@ -2,7 +2,7 @@ import asyncio, os
 from aiogram import Bot
 
 async def main():
-    base = "https://ТВОЙ-ПРОЕКТ.vercel.app"  # ← замени на свой домен
+    base = "https://anigott.vercel.app"  # ← замени на свой домен
     kk = Bot(token=os.environ["KK_BOT_TOKEN"])
     panel = Bot(token=os.environ["PANEL_BOT_TOKEN"])
     await kk.set_webhook(url=f"{base}/api/kk", secret_token=os.environ["KK_WEBHOOK_SECRET"], drop_pending_updates=True)
