@@ -103,35 +103,50 @@ async def guide_private(message: Message):
 async def guide_group(message: Message):
     await message.answer("Гайд доступен только в личных сообщениях с ботом.")
 
-@router.message(F.text, F.text.lower().startswith(("ставка", "ст")))
-async def handle_bet(message: Message):
-    prices, aliases = get_data()
-    lines = message.text.split("\n")[1:]
-    total = 0.0
-    results = []
-    pattern = re.compile(r'^(.+?)\s+(\d+)(?:\s+(\d+))?$')
-    for line in lines:
-        if not line.strip():
-            continue
-        m = pattern.match(line.strip())
-        if not m:
-            results.append(f"❌ <code>{line}</code>")
-            continue
-        raw_name, level, count = m.groups()
-        name = normalize_card_name(raw_name, aliases)
-        level = int(level)
-        count = int(count) if count else 1
-        if name not in prices:
-            results.append(f"❌ <b>{raw_name}</b> — нет карты")
-            continue
-        if level not in prices[name]:
-            results.append(f"❌ <b>{raw_name} {level}</b> — нет уровня")
-            continue
-        points = prices[name][level] * count
-        total += points
-        results.append(f"✅ <b>{raw_name} {level}</b> ×{count} = {points:g}")
-    user = f"@{message.from_user.username}" if message.from_user.username else message.from_user.first_name
-    await message.reply(f"💰 <b>Итог {user}</b>: {total:g} пт\n\n" + "\n".join(results))
+@router.message()
+async def handle_all_messages(message: Message):
+    # Сначала проверяем ставки
+    if message.text and message.text.lower().startswith(("ставка", "ст")):
+        prices, aliases = get_data()
+        lines = message.text.split("\n")[1:]
+        total = 0.0
+        results = []
+        pattern = re.compile(r'^(.+?)\s+(\d+)(?:\s+(\d+))?$')
+        
+        for line in lines:
+            if not line.strip():
+                continue
+            m = pattern.match(line.strip())
+            if not m:
+                results.append(f"❌ <code>{line}</code>")
+                continue
+            
+            raw_name, level, count = m.groups()
+            name = normalize_card_name(raw_name, aliases)
+            level = int(level)
+            count = int(count) if count else 1
+            
+            if name not in prices:
+                results.append(f"❌ <b>{raw_name}</b> — нет карты")
+                continue
+            if level not in prices[name]:
+                results.append(f"❌ <b>{raw_name} {level}</b> — нет уровня")
+                continue
+            
+            points = prices[name][level] * count
+            total += points
+            results.append(f"✅ <b>{raw_name} {level}</b> ×{count} = {points:g}")
+        
+        user = (
+            f"@{message.from_user.username}"
+            if message.from_user.username
+            else message.from_user.first_name
+        )
+        text = f"💰 <b>Итог {user}</b>: {total:g} пт\n\n" + "\n".join(results)
+        await message.reply(text, parse_mode="HTML")
+        return  # ВАЖНО: return чтобы не сработал счётчик сообщений
+    
+    # ... остальная логика (счётчик сообщений, команды и т.д.)
 
 @router.message(Command("top"))
 async def top_users(message: Message):
