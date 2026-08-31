@@ -86,6 +86,10 @@ def make_progress_bar(current, target, size=10):
     return f"{'█' * filled}{'░' * (size - filled)} {int(ratio * 100)}%"
 
 # Создаём бота и dispatcher (один раз на вызов функции)
+# Глобальный event loop — создаётся ОДИН раз и НИКОГДА не закрывается
+LOOP = asyncio.new_event_loop()
+asyncio.set_event_loop(LOOP)
+
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 router = Router()
