@@ -289,12 +289,7 @@ class handler(BaseHTTPRequestHandler):
             update = Update(**json.loads(body))
             
             # Создаём новый event loop для каждого вызова
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                loop.run_until_complete(dp.feed_update(bot, update))
-            finally:
-                loop.close()
+            LOOP.run_until_complete(dp.feed_update(bot, update))
         except Exception as e:
             logging.error(f"Update error: {e}")
         
