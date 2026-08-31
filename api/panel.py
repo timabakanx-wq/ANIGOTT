@@ -14,16 +14,12 @@ WEBHOOK_SECRET = os.environ.get("PANEL_WEBHOOK_SECRET", "")
 ADMIN_IDS = {int(x) for x in os.environ.get("ADMIN_IDS", "").split(",") if x.strip()}
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-dp = Dispatcher()
-router = Router()
-dp.include_router(router)
 logging.basicConfig(level=logging.INFO)
 
 def is_admin(uid):
     return uid in ADMIN_IDS
 
-# ═══════════════ МЕНЮ ═══════════════
+# Меню
 MAIN_KB = IKM(inline_keyboard=[
     [IKB(text="📋 Весь прайс", callback_data="m_export"),
      IKB(text="🔍 Найти карту", callback_data="m_search_help")],
@@ -79,7 +75,7 @@ MENU_TEXTS = {
     ),
 }
 
-# ═══════════════ ОПЕРАЦИИ С БД ═══════════════
+# Операции с БД
 def edit_price(rating, price, name):
     name_lower = name.strip().lower()
     existing = supabase.table("cards").select("id").eq("name", name_lower).eq("rating", rating).execute().data
@@ -115,7 +111,7 @@ def get_count():
     rows = supabase.table("cards").select("name", count="exact", head=True).execute()
     return rows.count
 
-# ═══════════════ ПАРСЕРЫ ═══════════════
+# Парсеры
 def parse_data_lines(text):
     lines = text.split("\n")
     first = lines[0].strip().split(maxsplit=1)
@@ -147,7 +143,12 @@ def parse_delete_line(line):
     except ValueError:
         return None, line.strip()
 
-# ═══════════════ ХЕНДЛЕРЫ ═══════════════
+# Создаём бота и dispatcher
+bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+dp = Dispatcher()
+router = Router()
+dp.include_router(router)
+
 @router.message(Command("start"))
 async def cmd_start(m: Message):
     if not is_admin(m.from_user.id):
@@ -270,22 +271,32 @@ async def cmd_price(m: Message):
             results.append(f"❌ <b>{parts[1]} {rating}</b> не найден")
     await m.answer("\n".join(results))
 
-# ═══════════════ ВЕБХУК ═══════════════
+# Вебхук
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
+        if WEBHOOK_SECRET:
+            if self.headers.get("X-Telegram-Bot-Api-Secret-Token", "") != WEBHOOK_SECRET:
+                self.send_response(403)
+                self.end_headers()
+                return
+        
         try:
-            if WEBHOOK_SECRET:
-                if self.headers.get("X-Telegram-Bot-Api-Secret-Token", "") != WEBHOOK_SECRET:
-                    self.send_response(403)
-                    self.end_headers()
-                    return
             body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
             update = Update(**json.loads(body))
-            asyncio.run(dp.feed_update(bot, update))
+            
+            # Создаём новый event loop для каждого вызова
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(dp.feed_update(bot, update))
+            finally:
+                loop.close()
         except Exception as e:
             logging.error(f"Update error: {e}")
+        
         self.send_response(200)
         self.end_headers()
         self.wfile.write(b'{"ok":true}')
+    
     def log_message(self, format, *args):
         pass
