@@ -144,6 +144,10 @@ def parse_delete_line(line):
         return None, line.strip()
 
 # Создаём бота и dispatcher
+# Глобальный event loop — создаётся ОДИН раз и НИКОГДА не закрывается
+LOOP = asyncio.new_event_loop()
+asyncio.set_event_loop(LOOP)
+
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
 router = Router()
