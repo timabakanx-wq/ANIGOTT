@@ -296,7 +296,7 @@ class handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
         self.wfile.write(b'{"ok":true}')
-handler = handler
     
     def log_message(self, format, *args):
         pass
+handler = handler
