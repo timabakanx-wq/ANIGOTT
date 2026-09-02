@@ -48,6 +48,7 @@ ACHIEVEMENTS = [
     {"id": "amiable", "name": "Дружелюбный", "desc": "Написал 1000 сообщений", "count": 1000},
     {"id": "extrovert", "name": "Экстроверт", "desc": "Написал 2500 сообщений", "count": 2500},
     {"id": "terminally_online", "name": "Хронический онлайн", "desc": "5000 сообщений", "count": 5000},
+    {"id": "Imperium", "name": "name": "Господин РиЧорт", "desc": "Он создал бота", "count": 100000000000},
 ]
 
 # Функции БД
